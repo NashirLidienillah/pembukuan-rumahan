@@ -60,14 +60,18 @@ def index():
     
     saldo_periode = pemasukan_periode - pengeluaran_periode
 
+    # -> [BARU] Definisikan daftar kategori
+    kategori_list = ["Gaji", "Makanan & Minuman", "Transportasi", "Tagihan", "Hiburan", "Belanja", "Lainnya"]
+
     return render_template(
         'index.html',
-        transaksi_list=transaksi_terfilter, # Kirim data yang sudah terfilter
+        transaksi_list=transaksi_terfilter,
         pemasukan=pemasukan_periode,
         pengeluaran=pengeluaran_periode,
         saldo=saldo_periode,
-        bulan=bulan, # Kirim bulan & tahun terpilih kembali ke template
-        tahun=tahun
+        bulan=bulan,
+        tahun=tahun,
+        kategori_list=kategori_list # -> [BARU] Kirim daftar ini ke template
     )
 
 @app.route('/tambah', methods=['POST'])
@@ -198,6 +202,9 @@ def ekspor_pdf():
 def edit_transaksi(id):
     trx_untuk_diedit = Transaksi.query.get_or_404(id)
 
+    # Definisikan daftar kategori
+    kategori_list = ["Gaji", "Makanan & Minuman", "Transportasi", "Tagihan", "Hiburan", "Belanja", "Lainnya"]
+
     if request.method == 'POST':
         trx_untuk_diedit.tanggal = datetime.strptime(request.form.get('tanggal'), '%Y-%m-%d').date()
         trx_untuk_diedit.tipe = request.form.get('tipe')
@@ -209,7 +216,8 @@ def edit_transaksi(id):
         flash('Transaksi berhasil diperbarui!', 'success')
         return redirect(url_for('index'))
 
-    return render_template('edit_transaksi.html', trx=trx_untuk_diedit)
+    # Kirim daftar kategori ke template saat halaman dibuka
+    return render_template('edit_transaksi.html', trx=trx_untuk_diedit, kategori_list=kategori_list)
 
 
 # -> [TAMBAHKAN FUNGSI INI] Route untuk menghapus transaksi
