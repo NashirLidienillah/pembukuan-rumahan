@@ -1,0 +1,12 @@
+# Folder Virtual Environment
+venv/
+
+# File Environment yang berisi rahasia (password database)
+.env
+
+# Cache dan file sementara Python
+__pycache__/
+*.pyc
+
+# Folder spesifik editor (opsional, tapi bagus)
+.vscode/
