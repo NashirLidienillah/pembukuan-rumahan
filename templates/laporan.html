@@ -45,7 +45,7 @@
     {% if hasil %}
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h3>Hasil Laporan untuk Bulan {{ bulan }}/{{ tahun }}</h3>
+            <h3>Hasil Laporan untuk {{ pemilik_terpilih }} ({{ bulan }}/{{ tahun }})</h3>
             <a href="/ekspor-pdf?bulan={{ bulan }}&tahun={{ tahun }}" class="btn btn-danger">
                 <i class="bi bi-file-earmark-pdf-fill"></i> Cetak PDF
             </a>
@@ -85,22 +85,26 @@
             <script>
                 const labels = {{ labels_pie | tojson }};
                 const data = {{ data_pie | tojson }};
-                new Chart(document.getElementById('pieChartPengeluaran'), {
-                    type: 'pie',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Pengeluaran (Rp)',
-                            data: data,
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)',
-                                'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)',
-                                'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'
-                            ],
-                        }]
-                    },
-                    options: { responsive: true }
-                });
+                if (data.length > 0) {
+                    new Chart(document.getElementById('pieChartPengeluaran'), {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Pengeluaran (Rp)',
+                                data: data,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)',
+                                    'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)',
+                                    'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'
+                                ],
+                            }]
+                        },
+                        options: { responsive: true }
+                    });
+                } else {
+                    document.getElementById('pieChartPengeluaran').getContext('2d').fillText("Tidak ada data pengeluaran untuk ditampilkan.", 10, 50);
+                }
             </script>
             
             <hr>
