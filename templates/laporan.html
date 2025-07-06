@@ -12,23 +12,25 @@
         <div class="card-header">Pilih Periode Laporan</div>
         <div class="card-body">
             <form method="POST">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-4">
-                        <label for="bulan" class="form-label">Bulan</label>
-                        <select class="form-select" id="bulan" name="bulan" required>
-                            {% for i in range(1, 13) %}
-                            <option value="{{ i }}" {% if i == bulan %}selected{% endif %}>{{ i }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="tahun" class="form-label">Tahun</label>
-                        <input type="number" class="form-control" id="tahun" name="tahun" value="{{ tahun }}" required>
-                    </div>
-                    <div class="col-md-4">
-                        <button type="submit" class="btn btn-primary w-100">Tampilkan Laporan</button>
-                    </div>
-                </div>
+               <div class="row g-3 align-items-end">
+    <div class="col-md-4">
+        <label for="bulan" class="form-label">Bulan</label>
+        </div>
+    <div class="col-md-4">
+        <label for="tahun" class="form-label">Tahun</label>
+        </div>
+    <div class="col-md-4">
+        <label for="pemilik" class="form-label">Pemilik</label>
+        <select class="form-select" id="pemilik" name="pemilik">
+            <option value="Semua">Semua Pemilik</option>
+            {% for p in pemilik_list %}
+            <option value="{{ p }}" {% if p == pemilik_terpilih %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-12 mt-3"> <button type="submit" class="btn btn-primary w-100">Tampilkan Laporan</button>
+    </div>
+</div>
             </form>
         </div>
     </div>
