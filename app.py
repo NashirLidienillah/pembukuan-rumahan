@@ -174,18 +174,18 @@ def laporan():
 
 @app.route('/ekspor-pdf')
 def ekspor_pdf():
-    bulan_str = request.args.get('bulan')
-    tahun_str = request.args.get('tahun')
+    # Ambil parameter dari URL, beri nilai default jika tidak ada
+    bulan_str = request.args.get('bulan', str(datetime.now().month))
+    tahun_str = request.args.get('tahun', str(datetime.now().year))
     pemilik_terpilih = request.args.get('pemilik', 'Semua')
 
-    if not bulan_str or not tahun_str:
-        return "Error: Parameter bulan dan tahun dibutuhkan.", 400
     try:
         bulan = int(bulan_str)
         tahun = int(tahun_str)
     except ValueError:
-        return "Error: Parameter bulan dan tahun harus berupa angka.", 400
+        return "Error: Parameter bulan dan tahun tidak valid.", 400
 
+    # Query data berdasarkan filter
     query = Transaksi.query.filter(
         extract('year', Transaksi.tanggal) == tahun,
         extract('month', Transaksi.tanggal) == bulan
@@ -195,10 +195,12 @@ def ekspor_pdf():
 
     transaksi_periode_ini = query.order_by(Transaksi.tanggal.asc()).all()
 
+    # Hitung total
     total_pemasukan = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pemasukan')
     total_pengeluaran = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pengeluaran')
     sisa_uang = total_pemasukan - total_pengeluaran
 
+    # --- Proses Pembuatan PDF ---
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font('Helvetica', 'B', 16)
@@ -206,40 +208,41 @@ def ekspor_pdf():
     pdf.ln(10)
     
     pdf.set_font('Helvetica', '', 12)
-    pdf.cell(0, 10, f'Total Pemasukan: Rp {total_pemasukan:,.0f}', 0, 1)
-    pdf.cell(0, 10, f'Total Pengeluaran: Rp {total_pengeluaran:,.0f}', 0, 1)
+    pdf.cell(0, 8, f'Total Pemasukan: Rp {total_pemasukan:,.0f}', 0, 1)
+    pdf.cell(0, 8, f'Total Pengeluaran: Rp {total_pengeluaran:,.0f}', 0, 1)
     pdf.set_font('Helvetica', 'B', 12)
-    pdf.cell(0, 10, f'Sisa Uang: Rp {sisa_uang:,.0f}', 0, 1)
+    pdf.cell(0, 8, f'Sisa Uang: Rp {sisa_uang:,.0f}', 0, 1)
     pdf.ln(10)
 
     pdf.set_font('Helvetica', 'B', 10)
-    pdf.cell(25, 10, 'Tanggal', 1)
-    pdf.cell(30, 10, 'Kategori', 1)
-    pdf.cell(30, 10, 'Pemilik', 1)
-    pdf.cell(45, 10, 'Keterangan', 1)
-    pdf.cell(30, 10, 'Pemasukan', 1)
-    pdf.cell(30, 10, 'Pengeluaran', 1)
+    pdf.cell(25, 8, 'Tanggal', 1)
+    pdf.cell(30, 8, 'Kategori', 1)
+    pdf.cell(30, 8, 'Pemilik', 1)
+    pdf.cell(45, 8, 'Keterangan', 1)
+    pdf.cell(30, 8, 'Pemasukan', 1)
+    pdf.cell(30, 8, 'Pengeluaran', 1)
     pdf.ln()
 
-    pdf.set_font('Helvetica', '', 10)
+    pdf.set_font('Helvetica', '', 9)
     for trx in transaksi_periode_ini:
-        pdf.cell(25, 10, trx.tanggal.strftime('%d-%m-%Y'), 1)
-        pdf.cell(30, 10, trx.kategori, 1)
-        pdf.cell(30, 10, trx.pemilik, 1)
-        pdf.cell(45, 10, trx.keterangan or '', 1)
+        pdf.cell(25, 8, trx.tanggal.strftime('%d-%m-%Y'), 1)
+        pdf.cell(30, 8, trx.kategori, 1)
+        pdf.cell(30, 8, trx.pemilik, 1)
+        pdf.cell(45, 8, trx.keterangan or '', 1)
         if trx.tipe == 'Pemasukan':
-            pdf.cell(30, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
-            pdf.cell(30, 10, '', 1)
+            pdf.cell(30, 8, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
+            pdf.cell(30, 8, '', 1)
         else:
-            pdf.cell(30, 10, '', 1)
-            pdf.cell(30, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
+            pdf.cell(30, 8, '', 1)
+            pdf.cell(30, 8, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
         pdf.ln()
     
     pdf.set_font('Helvetica', 'B', 10)
-    pdf.cell(130, 10, 'TOTAL', 1, 0, 'R')
-    pdf.cell(30, 10, f'Rp {total_pemasukan:,.0f}', 1, 0, 'R')
-    pdf.cell(30, 10, f'Rp {total_pengeluaran:,.0f}', 1, 1, 'R')
+    pdf.cell(130, 8, 'TOTAL', 1, 0, 'R')
+    pdf.cell(30, 8, f'Rp {total_pemasukan:,.0f}', 1, 0, 'R')
+    pdf.cell(30, 8, f'Rp {total_pengeluaran:,.0f}', 1, 1, 'R')
 
+    # Membuat response untuk mengirim file PDF
     response = make_response(bytes(pdf.output()))
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename=laporan_{pemilik_terpilih}_{bulan}_{tahun}.pdf'
