@@ -33,9 +33,6 @@ class Transaksi(db.Model):
 pemilik_list = ["Abi", "Umi", "Anas", "Nida", "Lainnya"]
 kategori_list = ["Gaji", "Makanan & Minuman", "Transportasi", "Tagihan", "Hiburan", "Belanja", "Lainnya"]
 
-@app.before_first_request
-def create_tables():
-    db.create_all()
 
 # --- Route Utama dan Transaksi ---
 @app.route('/', methods=['GET', 'POST'])
