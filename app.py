@@ -37,20 +37,25 @@ kategori_list = ["Gaji", "Makanan & Minuman", "Transportasi", "Tagihan", "Hibura
 # --- Route Utama dan Transaksi ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    # Tentukan periode default (bulan dan tahun saat ini)
     bulan = datetime.now().month
     tahun = datetime.now().year
 
+    # Jika ada filter yang dikirim dari form, gunakan nilai dari form
     if request.method == 'POST':
         bulan = int(request.form.get('bulan'))
         tahun = int(request.form.get('tahun'))
     
+    # Buat query dasar untuk periode yang dipilih
     query = Transaksi.query.filter(
         extract('year', Transaksi.tanggal) == tahun,
         extract('month', Transaksi.tanggal) == bulan
     )
     
+    # Ambil daftar transaksi untuk tabel
     transaksi_terfilter = query.order_by(Transaksi.tanggal.desc()).all()
 
+    # Hitung total untuk kartu ringkasan
     pemasukan_periode = sum(t.jumlah for t in transaksi_terfilter if t.tipe == 'Pemasukan')
     pengeluaran_periode = sum(t.jumlah for t in transaksi_terfilter if t.tipe == 'Pengeluaran')
     saldo_periode = pemasukan_periode - pengeluaran_periode
