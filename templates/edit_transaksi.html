@@ -27,15 +27,19 @@
                     </div>
                     <div class="col-md-3">
                         <label for="kategori" class="form-label">Kategori</label>
-                        <input type="text" class="form-control" id="kategori" name="kategori" value="{{ trx.kategori }}" required>
+                        <select class="form-select" id="kategori" name="kategori" required>
+                            {% for kat in kategori_list %}
+                            <option value="{{ kat }}" {% if kat == trx.kategori %}selected{% endif %}>{{ kat }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="col-12">
-                    <label for="pemilik" class="form-label">Pemilik</label>
-                    <select class="form-select" id="pemilik" name="pemilik" required>
-                    {% for p in pemilik_list %}
-                    <option value="{{ p }}" {% if p == trx.pemilik %}selected{% endif %}>{{ p }}</option>
-                    {% endfor %}
-                     </select>
+                        <label for="pemilik" class="form-label">Pemilik</label>
+                        <select class="form-select" id="pemilik" name="pemilik" required>
+                             {% for p in pemilik_list %}
+                            <option value="{{ p }}" {% if p == trx.pemilik %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="col-12">
                         <label for="keterangan" class="form-label">Keterangan</label>

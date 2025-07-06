@@ -3,34 +3,39 @@
 {% block title %}Laporan Keuangan{% endblock %}
 
 {% block content %}
-    <a href="{{ url_for('index') }}" class="btn btn-secondary mb-3">
-        <i class="bi bi-arrow-left"></i> Kembali ke Dashboard
-    </a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mb-3">Kembali ke Dashboard</a>
     <h1>Laporan Keuangan Bulanan</h1>
 
     <div class="card my-4">
         <div class="card-header">Pilih Periode Laporan</div>
         <div class="card-body">
             <form method="POST">
-               <div class="row g-3 align-items-end">
-    <div class="col-md-4">
-        <label for="bulan" class="form-label">Bulan</label>
-        </div>
-    <div class="col-md-4">
-        <label for="tahun" class="form-label">Tahun</label>
-        </div>
-    <div class="col-md-4">
-        <label for="pemilik" class="form-label">Pemilik</label>
-        <select class="form-select" id="pemilik" name="pemilik">
-            <option value="Semua">Semua Pemilik</option>
-            {% for p in pemilik_list %}
-            <option value="{{ p }}" {% if p == pemilik_terpilih %}selected{% endif %}>{{ p }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-12 mt-3"> <button type="submit" class="btn btn-primary w-100">Tampilkan Laporan</button>
-    </div>
-</div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="bulan" class="form-label">Bulan</label>
+                        <select class="form-select" id="bulan" name="bulan" required>
+                            {% for i in range(1, 13) %}
+                            <option value="{{ i }}" {% if i == bulan %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="tahun" class="form-label">Tahun</label>
+                        <input type="number" class="form-control" id="tahun" name="tahun" value="{{ tahun }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="pemilik" class="form-label">Pemilik</label>
+                        <select class="form-select" id="pemilik" name="pemilik">
+                            <option value="Semua">Semua Pemilik</option>
+                            {% for p in pemilik_list %}
+                            <option value="{{ p }}" {% if p == pemilik_terpilih %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-primary w-100">Tampilkan Laporan</button>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
@@ -40,7 +45,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3>Hasil Laporan untuk Bulan {{ bulan }}/{{ tahun }}</h3>
             <a href="/ekspor-pdf?bulan={{ bulan }}&tahun={{ tahun }}" class="btn btn-danger">
-                <i class="bi bi-file-earmark-pdf-fill"></i> Cetak PDF
+                Cetak PDF
             </a>
         </div>
         <div class="card-body">
@@ -64,39 +69,39 @@
                     </div>
                 </div>
             </div>
-
+            
             <hr>
             <h4>Rincian Transaksi</h4>
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Tipe</th>
-                            <th>Jumlah</th>
-                            <th>Kategori</th>
-                            <th>Keterangan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for trx in transaksi_list %}
-                        <tr>
-                            <td>{{ trx.tanggal.strftime('%d-%m-%Y') }}</td>
-                            <td>{{ trx.tipe }}</td>
-                            <td class="{{ 'text-success' if trx.tipe == 'Pemasukan' else 'text-danger' }}">
-                                <strong>Rp {{ '{:,.0f}'.format(trx.jumlah) }}</strong>
-                            </td>
-                            <td><span class="badge bg-secondary">{{ trx.kategori }}</span></td>
-                            <td>{{ trx.keterangan }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center">Tidak ada transaksi pada periode ini.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Tipe</th>
+                        <th>Jumlah</th>
+                        <th>Kategori</th>
+                        <th>Pemilik</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trx in transaksi_list %}
+                    <tr>
+                        <td>{{ trx.tanggal.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ trx.tipe }}</td>
+                        <td class="{{ 'text-success' if trx.tipe == 'Pemasukan' else 'text-danger' }}">
+                            <strong>Rp {{ '{:,.0f}'.format(trx.jumlah) }}</strong>
+                        </td>
+                        <td><span class="badge bg-secondary">{{ trx.kategori }}</span></td>
+                        <td><span class="badge bg-info text-dark">{{ trx.pemilik }}</span></td>
+                        <td>{{ trx.keterangan }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Tidak ada transaksi pada periode ini.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
     {% endif %}
