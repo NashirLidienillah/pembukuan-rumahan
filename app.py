@@ -30,7 +30,7 @@ class Transaksi(db.Model):
     pemilik = db.Column(db.String(50), nullable=True)
 
 # Daftar master untuk dropdown
-pemilik_list = ["Saya", "Ayah", "Ibu", "Keluarga", "Lainnya"]
+pemilik_list = ["Abi", "Umi", "Anas", "Nida", "Lainnya"]
 kategori_list = ["Gaji", "Makanan & Minuman", "Transportasi", "Tagihan", "Hiburan", "Belanja", "Lainnya"]
 
 @app.before_first_request
@@ -179,6 +179,7 @@ def laporan():
 def ekspor_pdf():
     bulan_str = request.args.get('bulan')
     tahun_str = request.args.get('tahun')
+    pemilik_terpilih = request.args.get('pemilik', 'Semua')
 
     if not bulan_str or not tahun_str:
         return "Error: Parameter bulan dan tahun dibutuhkan.", 400
@@ -188,49 +189,63 @@ def ekspor_pdf():
     except ValueError:
         return "Error: Parameter bulan dan tahun harus berupa angka.", 400
 
-    transaksi_periode_ini = Transaksi.query.filter(
+    query = Transaksi.query.filter(
         extract('year', Transaksi.tanggal) == tahun,
         extract('month', Transaksi.tanggal) == bulan
-    ).order_by(Transaksi.tanggal.asc()).all()
+    )
+    if pemilik_terpilih != 'Semua':
+        query = query.filter(Transaksi.pemilik == pemilik_terpilih)
+
+    transaksi_periode_ini = query.order_by(Transaksi.tanggal.asc()).all()
 
     total_pemasukan = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pemasukan')
     total_pengeluaran = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pengeluaran')
-    laba_rugi = total_pemasukan - total_pengeluaran
+    sisa_uang = total_pemasukan - total_pengeluaran
 
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font('Helvetica', 'B', 16)
-    pdf.cell(0, 10, f'Laporan Keuangan - Bulan {bulan}/{tahun}', 0, 1, 'C')
+    pdf.cell(0, 10, f'Laporan Keuangan - {pemilik_terpilih} ({bulan}/{tahun})', 0, 1, 'C')
     pdf.ln(10)
+    
     pdf.set_font('Helvetica', '', 12)
     pdf.cell(0, 10, f'Total Pemasukan: Rp {total_pemasukan:,.0f}', 0, 1)
     pdf.cell(0, 10, f'Total Pengeluaran: Rp {total_pengeluaran:,.0f}', 0, 1)
     pdf.set_font('Helvetica', 'B', 12)
-    pdf.cell(0, 10, f'Sisa Uang: Rp {laba_rugi:,.0f}', 0, 1)
+    pdf.cell(0, 10, f'Sisa Uang: Rp {sisa_uang:,.0f}', 0, 1)
     pdf.ln(10)
+
     pdf.set_font('Helvetica', 'B', 10)
     pdf.cell(25, 10, 'Tanggal', 1)
-    pdf.cell(35, 10, 'Kategori', 1)
-    pdf.cell(60, 10, 'Keterangan', 1)
-    pdf.cell(35, 10, 'Pemasukan', 1)
-    pdf.cell(35, 10, 'Pengeluaran', 1)
+    pdf.cell(30, 10, 'Kategori', 1)
+    pdf.cell(30, 10, 'Pemilik', 1)
+    pdf.cell(45, 10, 'Keterangan', 1)
+    pdf.cell(30, 10, 'Pemasukan', 1)
+    pdf.cell(30, 10, 'Pengeluaran', 1)
     pdf.ln()
+
     pdf.set_font('Helvetica', '', 10)
     for trx in transaksi_periode_ini:
         pdf.cell(25, 10, trx.tanggal.strftime('%d-%m-%Y'), 1)
-        pdf.cell(35, 10, trx.kategori, 1)
-        pdf.cell(60, 10, trx.keterangan or '', 1)
+        pdf.cell(30, 10, trx.kategori, 1)
+        pdf.cell(30, 10, trx.pemilik, 1)
+        pdf.cell(45, 10, trx.keterangan or '', 1)
         if trx.tipe == 'Pemasukan':
-            pdf.cell(35, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
-            pdf.cell(35, 10, '', 1)
+            pdf.cell(30, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
+            pdf.cell(30, 10, '', 1)
         else:
-            pdf.cell(35, 10, '', 1)
-            pdf.cell(35, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
+            pdf.cell(30, 10, '', 1)
+            pdf.cell(30, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
         pdf.ln()
+    
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(130, 10, 'TOTAL', 1, 0, 'R')
+    pdf.cell(30, 10, f'Rp {total_pemasukan:,.0f}', 1, 0, 'R')
+    pdf.cell(30, 10, f'Rp {total_pengeluaran:,.0f}', 1, 1, 'R')
 
     response = make_response(bytes(pdf.output()))
     response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename=laporan_{bulan}_{tahun}.pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=laporan_{pemilik_terpilih}_{bulan}_{tahun}.pdf'
     return response
 
 # Menjalankan aplikasi
