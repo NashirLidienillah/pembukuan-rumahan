@@ -1,0 +1,25 @@
+/* Menggunakan font yang lebih modern */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa; /* Warna latar belakang sedikit abu-abu */
+}
+
+/* Membuat header tabel lebih tegas */
+.table thead th {
+    background-color: #343a40; /* Warna gelap */
+    color: white;
+    border-color: #454d55;
+    vertical-align: middle;
+}
+
+/* Merapikan sel tabel */
+.table td {
+    vertical-align: middle;
+}
+
+/* Menambahkan sedikit lengkungan pada kartu dan tabel */
+.card, .table {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
