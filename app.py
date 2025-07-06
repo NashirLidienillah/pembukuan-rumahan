@@ -30,7 +30,7 @@ class Transaksi(db.Model):
     pemilik = db.Column(db.String(50), nullable=True) # -> [BARU] Kolom pemilik
 
 # Daftar master untuk dropdown
-pemilik_list = ["Saya", "Ayah", "Ibu", "Keluarga", "Lainnya"]
+pemilik_list = ["Abi", "Umi", "Anas", "Nida", "Lainnya"]
 kategori_list = ["Gaji", "Makanan & Minuman", "Transportasi", "Tagihan", "Hiburan", "Belanja", "Lainnya"]
 
 # --- Route Utama dan Transaksi ---
