@@ -76,10 +76,12 @@
                         <label for="jumlah" class="form-label">Jumlah (Rp)</label>
                         <input type="number" class="form-control" id="jumlah" name="jumlah" required>
                     </div>
-                    <div class="col-md-3">
-                        <label for="kategori" class="form-label">Kategori</label>
-                        <input type="text" class="form-control" id="kategori" name="kategori" required>
-                    </div>
+                    <<select class="form-select" id="kategori" name="kategori" required>
+    <option value="" disabled selected>-- Pilih Kategori --</option>
+    {% for kat in kategori_list %}
+    <option value="{{ kat }}">{{ kat }}</option>
+    {% endfor %}
+</select>
                     <div class="col-12">
                         <label for="keterangan" class="form-label">Keterangan</label>
                         <input type="text" class="form-control" id="keterangan" name="keterangan">
