@@ -127,72 +127,65 @@ def laporan():
 # -> [FITUR BARU] Route untuk membuat dan mengirim file PDF
 @app.route('/ekspor-pdf')
 def ekspor_pdf():
-    # Mengambil parameter dari URL
     bulan_str = request.args.get('bulan')
     tahun_str = request.args.get('tahun')
 
-    # Pemeriksaan awal, jika parameter tidak ada
     if not bulan_str or not tahun_str:
         return "Error: Parameter bulan dan tahun dibutuhkan.", 400
 
     try:
-        # Mengubah string menjadi integer
         bulan = int(bulan_str)
         tahun = int(tahun_str)
     except ValueError:
         return "Error: Parameter bulan dan tahun harus berupa angka.", 400
 
-    # Ambil semua transaksi untuk periode yang dipilih
     transaksi_periode_ini = Transaksi.query.filter(
         extract('year', Transaksi.tanggal) == tahun,
         extract('month', Transaksi.tanggal) == bulan
     ).order_by(Transaksi.tanggal.asc()).all()
 
-    # Hitung ulang total untuk laporan
     total_pemasukan = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pemasukan')
     total_pengeluaran = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pengeluaran')
     laba_rugi = total_pemasukan - total_pengeluaran
 
-    # --- Membuat Dokumen PDF ---
     pdf = FPDF()
     pdf.add_page()
 
     # Header Laporan
-    pdf.set_font('Arial', 'B', 16)
+    pdf.set_font('Helvetica', 'B', 16) # -> [PERBAIKAN] Menggunakan Helvetica
     pdf.cell(0, 10, f'Laporan Keuangan - Bulan {bulan}/{tahun}', 0, 1, 'C')
     pdf.ln(10)
 
     # Ringkasan Laporan
-    pdf.set_font('Arial', '', 12)
+    pdf.set_font('Helvetica', '', 12) # -> [PERBAIKAN] Menggunakan Helvetica
     pdf.cell(0, 10, f'Total Pemasukan: Rp {total_pemasukan:,.0f}', 0, 1)
     pdf.cell(0, 10, f'Total Pengeluaran: Rp {total_pengeluaran:,.0f}', 0, 1)
-    pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 10, f'Laba / Rugi: Rp {laba_rugi:,.0f}', 0, 1)
+    pdf.set_font('Helvetica', 'B', 12) # -> [PERBAIKAN] Menggunakan Helvetica
+    pdf.cell(0, 10, f'Sisa Uang: Rp {laba_rugi:,.0f}', 0, 1) # Mengganti Laba/Rugi menjadi Sisa Uang
     pdf.ln(10)
 
     # Tabel Detail Transaksi
-    pdf.set_font('Arial', 'B', 10)
+    pdf.set_font('Helvetica', 'B', 10) # -> [PERBAIKAN] Menggunakan Helvetica
     pdf.cell(25, 10, 'Tanggal', 1)
     pdf.cell(35, 10, 'Kategori', 1)
-    pdf.cell(60, 10, 'Keterangan', 1) # Lebarkan kolom keterangan
-    pdf.cell(35, 10, 'Pemasukan', 1) # Lebarkan kolom pemasukan/pengeluaran
+    pdf.cell(60, 10, 'Keterangan', 1)
+    pdf.cell(35, 10, 'Pemasukan', 1)
     pdf.cell(35, 10, 'Pengeluaran', 1)
     pdf.ln()
 
-    pdf.set_font('Arial', '', 10)
+    pdf.set_font('Helvetica', '', 10) # -> [PERBAIKAN] Menggunakan Helvetica
     for trx in transaksi_periode_ini:
         pdf.cell(25, 10, trx.tanggal.strftime('%d-%m-%Y'), 1)
         pdf.cell(35, 10, trx.kategori, 1)
         pdf.cell(60, 10, trx.keterangan or '', 1)
         if trx.tipe == 'Pemasukan':
-            pdf.cell(35, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R') # 'R' untuk rata kanan
+            pdf.cell(35, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
             pdf.cell(35, 10, '', 1)
         else:
             pdf.cell(35, 10, '', 1)
             pdf.cell(35, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
         pdf.ln()
 
-    # Membuat response untuk mengirim file PDF
     response = make_response(pdf.output())
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename=laporan_{bulan}_{tahun}.pdf'
