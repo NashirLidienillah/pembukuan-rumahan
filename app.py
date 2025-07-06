@@ -186,7 +186,7 @@ def ekspor_pdf():
             pdf.cell(35, 10, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
         pdf.ln()
 
-    response = make_response(pdf.output())
+    response = make_response(bytes(pdf.output()))
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename=laporan_{bulan}_{tahun}.pdf'
     
