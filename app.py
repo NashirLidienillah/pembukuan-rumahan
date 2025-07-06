@@ -37,11 +37,9 @@ kategori_list = ["Gaji", "Makanan & Minuman", "Transportasi", "Tagihan", "Hibura
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Jika ada filter dari form, gunakan itu
         bulan = int(request.form.get('bulan'))
         tahun = int(request.form.get('tahun'))
     else:
-        # Jika tidak, coba ambil dari URL (untuk redirect). Jika tidak ada juga, baru pakai bulan sekarang.
         bulan = request.args.get('bulan', default=datetime.now().month, type=int)
         tahun = request.args.get('tahun', default=datetime.now().year, type=int)
     
@@ -83,7 +81,6 @@ def tambah_transaksi():
         db.session.add(transaksi_baru)
         db.session.commit()
         flash('Transaksi baru berhasil ditambahkan!', 'success')
-        # Setelah menambah, kembali ke bulan di mana transaksi ditambahkan
         return redirect(url_for('index', bulan=tanggal.month, tahun=tanggal.year))
     except Exception as e:
         flash(f'Terjadi error saat menambah data: {e}', 'danger')
@@ -106,7 +103,6 @@ def edit_transaksi(id):
             trx_untuk_diedit.pemilik = request.form.get('pemilik')
             db.session.commit()
             flash('Transaksi berhasil diperbarui!', 'success')
-            # Kembali ke bulan di mana transaksi diedit
             return redirect(url_for('index', bulan=tanggal_baru.month, tahun=tanggal_baru.year))
         except Exception as e:
             flash(f'Error saat memperbarui data: {e}', 'danger')
@@ -118,7 +114,6 @@ def edit_transaksi(id):
 
 @app.route('/hapus/<int:id>')
 def hapus_transaksi(id):
-    # Ambil bulan dan tahun dari URL sebelum menghapus
     bulan = request.args.get('bulan', type=int)
     tahun = request.args.get('tahun', type=int)
     
@@ -131,12 +126,130 @@ def hapus_transaksi(id):
         flash(f'Error saat menghapus: {e}', 'danger')
         db.session.rollback()
     
-    # Redirect kembali ke bulan dan tahun yang sama
     return redirect(url_for('index', bulan=bulan, tahun=tahun))
 
 
-# (Fungsi laporan dan ekspor_pdf tidak berubah dari versi final sebelumnya)
-# ...
+# --- [PERBAIKAN] Route Laporan & Ekspor yang hilang, sekarang ditambahkan kembali ---
+@app.route('/laporan', methods=['GET', 'POST'])
+def laporan():
+    current_year = datetime.now().year
+    bulan = datetime.now().month
+    tahun = current_year
+    pemilik_terpilih = 'Semua'
 
+    if request.method == 'POST':
+        bulan = int(request.form.get('bulan'))
+        tahun = int(request.form.get('tahun'))
+        pemilik_terpilih = request.form.get('pemilik')
+
+    base_query = Transaksi.query.filter(
+        extract('year', Transaksi.tanggal) == tahun,
+        extract('month', Transaksi.tanggal) == bulan
+    )
+    if pemilik_terpilih != 'Semua':
+        base_query = base_query.filter(Transaksi.pemilik == pemilik_terpilih)
+
+    transaksi_periode_ini = base_query.order_by(Transaksi.tanggal.asc()).all()
+    
+    total_pemasukan = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pemasukan')
+    total_pengeluaran = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pengeluaran')
+    sisa_uang = total_pemasukan - total_pengeluaran
+    hasil = {'pemasukan': total_pemasukan, 'pengeluaran': total_pengeluaran, 'laba_rugi': sisa_uang}
+    
+    data_pie_chart_query = db.session.query(
+        Transaksi.kategori, func.sum(Transaksi.jumlah)
+    ).filter(
+        extract('year', Transaksi.tanggal) == tahun,
+        extract('month', Transaksi.tanggal) == bulan,
+        Transaksi.tipe == 'Pengeluaran'
+    )
+    if pemilik_terpilih != 'Semua':
+        data_pie_chart_query = data_pie_chart_query.filter(Transaksi.pemilik == pemilik_terpilih)
+    
+    data_pie_chart_result = data_pie_chart_query.group_by(Transaksi.kategori).all()
+
+    labels_pie = [item[0] for item in data_pie_chart_result]
+    data_pie = [item[1] for item in data_pie_chart_result]
+    
+    return render_template(
+        'laporan.html', 
+        hasil=hasil, bulan=bulan, tahun=tahun, current_year=current_year,
+        transaksi_list=transaksi_periode_ini,
+        pemilik_list=pemilik_list,
+        pemilik_terpilih=pemilik_terpilih,
+        labels_pie=labels_pie,
+        data_pie=data_pie
+    )
+
+@app.route('/ekspor-pdf')
+def ekspor_pdf():
+    bulan_str = request.args.get('bulan')
+    tahun_str = request.args.get('tahun')
+    pemilik_terpilih = request.args.get('pemilik', 'Semua')
+
+    if not bulan_str or not tahun_str:
+        return "Error: Parameter bulan dan tahun dibutuhkan.", 400
+    try:
+        bulan = int(bulan_str)
+        tahun = int(tahun_str)
+    except ValueError:
+        return "Error: Parameter bulan dan tahun harus berupa angka.", 400
+
+    query = Transaksi.query.filter(
+        extract('year', Transaksi.tanggal) == tahun,
+        extract('month', Transaksi.tanggal) == bulan
+    )
+    if pemilik_terpilih != 'Semua':
+        query = query.filter(Transaksi.pemilik == pemilik_terpilih)
+
+    transaksi_periode_ini = query.order_by(Transaksi.tanggal.asc()).all()
+    
+    total_pemasukan = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pemasukan')
+    total_pengeluaran = sum(t.jumlah for t in transaksi_periode_ini if t.tipe == 'Pengeluaran')
+    sisa_uang = total_pemasukan - total_pengeluaran
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.cell(0, 10, f'Laporan Keuangan - {pemilik_terpilih} ({bulan}/{tahun})', 0, 1, 'C')
+    pdf.ln(10)
+    pdf.set_font('Helvetica', '', 12)
+    pdf.cell(0, 8, f'Total Pemasukan: Rp {total_pemasukan:,.0f}', 0, 1)
+    pdf.cell(0, 8, f'Total Pengeluaran: Rp {total_pengeluaran:,.0f}', 0, 1)
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 8, f'Sisa Uang: Rp {sisa_uang:,.0f}', 0, 1)
+    pdf.ln(10)
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(25, 8, 'Tanggal', 1)
+    pdf.cell(30, 8, 'Kategori', 1)
+    pdf.cell(30, 8, 'Pemilik', 1)
+    pdf.cell(45, 8, 'Keterangan', 1)
+    pdf.cell(30, 8, 'Pemasukan', 1)
+    pdf.cell(30, 8, 'Pengeluaran', 1)
+    pdf.ln()
+    pdf.set_font('Helvetica', '', 9)
+    for trx in transaksi_periode_ini:
+        pdf.cell(25, 8, trx.tanggal.strftime('%d-%m-%Y'), 1)
+        pdf.cell(30, 8, trx.kategori, 1)
+        pdf.cell(30, 8, trx.pemilik or '', 1)
+        pdf.cell(45, 8, trx.keterangan or '', 1)
+        if trx.tipe == 'Pemasukan':
+            pdf.cell(30, 8, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
+            pdf.cell(30, 8, '', 1)
+        else:
+            pdf.cell(30, 8, '', 1)
+            pdf.cell(30, 8, f'Rp {trx.jumlah:,.0f}', 1, 0, 'R')
+        pdf.ln()
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(130, 8, 'TOTAL', 1, 0, 'R')
+    pdf.cell(30, 8, f'Rp {total_pemasukan:,.0f}', 1, 0, 'R')
+    pdf.cell(30, 8, f'Rp {total_pengeluaran:,.0f}', 1, 1, 'R')
+    
+    response = make_response(bytes(pdf.output()))
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=laporan_{pemilik_terpilih}_{bulan}_{tahun}.pdf'
+    return response
+
+# Menjalankan aplikasi
 if __name__ == '__main__':
     app.run(debug=True)
