@@ -127,6 +127,7 @@ def laporan():
 # -> [FITUR BARU] Route untuk membuat dan mengirim file PDF
 @app.route('/ekspor-pdf')
 def ekspor_pdf():
+    # Versi terbaru, paksa deploy ulang
     bulan_str = request.args.get('bulan')
     tahun_str = request.args.get('tahun')
 
